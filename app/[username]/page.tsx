@@ -1,12 +1,14 @@
 import Topics from "@/src/components/Topics";
 import AskQuestion from "@/src/components/AskQuestion";
 import CreateTopic from "@/src/components/CreateTopic";
+import EditProfile from "@/src/components/user/EditProfile";
 import { notFound } from "next/navigation";
 import Avatar from "@/src/components/global/Avatar";
 import Posts from "@/src/components/post/Posts";
 import { Question, Topic } from "@/supabase/models";
 import { createClient } from "@/utils/supabase/supabase-server";
 import { questionQuery } from "@/supabase/queries";
+import PersonalButtonGroup from "@/src/components/PersonalButtonGroup";
 
 export default async function UserProfile({
   params,
@@ -71,7 +73,7 @@ export default async function UserProfile({
                 </h1>
               </div>
             </div>
-            <CreateTopic username={username} />
+            <PersonalButtonGroup username={username} />
           </div>
 
           <div className="mx-auto mt-8 grid max-w-3xl grid-cols-1 gap-6 sm:px-6 lg:max-w-7xl lg:grid-flow-col-dense lg:grid-cols-3">

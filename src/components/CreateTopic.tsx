@@ -4,25 +4,23 @@ import { Database } from "@/supabase/database";
 import { Topic } from "@/supabase/models";
 import { Dialog, Transition } from "@headlessui/react";
 import { PencilIcon } from "@heroicons/react/24/outline";
-import { useSupabaseClient, useUser } from "@supabase/auth-helpers-react";
 import { Notify } from "notiflix/build/notiflix-notify-aio";
 import React, { Fragment, useCallback, useEffect, useState } from "react";
+import { SupabaseClient, useUser } from "@supabase/auth-helpers-react";
 import { slugify } from "../helpers/formatting";
 import Button from "./common/button/Button";
 import Input from "./common/input/Input";
 
 interface CreateTopicProps {
-  username: string;
+  supabase: SupabaseClient<Database, "public", any>;
 }
 
-function CreateTopic({ username }: CreateTopicProps) {
-  const supabase = useSupabaseClient<Database>();
+function CreateTopic({ supabase }: CreateTopicProps) {
   const [open, setOpen] = useState(false);
   const user = useUser();
   const [topic, setTopic] = useState<string | undefined>(undefined);
   const [topics, setTopics] = useState<Topic[]>([]);
   const [filteredTopics, setFilteredTopics] = useState<Topic[]>([]);
-  const isOwnerUser = user && user.user_metadata.username === username;
 
   const [selectedTopic, setSelectedTopic] = useState<Topic | undefined>(
     undefined
@@ -84,96 +82,151 @@ function CreateTopic({ username }: CreateTopicProps) {
 
   return (
     <>
-      {isOwnerUser && (
-        <div>
-          <div className="justify-stretch mt-6 flex flex-col-reverse space-y-4 space-y-reverse sm:flex-row-reverse sm:justify-end sm:space-y-0 sm:space-x-3 sm:space-x-reverse md:mt-0 md:flex-row md:space-x-3">
-            <Button
-              variant="contained"
-              startIcon={<PencilIcon className="w-5 h-5" />}
-              onClick={() => setOpen(true)}
-            >
-              New Topic
-            </Button>
-          </div>
+      <div>
+        <div className="justify-stretch mt-6 flex flex-col-reverse space-y-4 space-y-reverse sm:flex-row-reverse sm:justify-end sm:space-y-0 sm:space-x-3 sm:space-x-reverse md:mt-0 md:flex-row md:space-x-3">
+          <Button
+            variant="contained"
+            startIcon={<PencilIcon className="w-5 h-5" />}
+            onClick={() => setOpen(true)}
+          >
+            New Topic
+          </Button>
+        </div>
 
-          <Transition.Root show={open} as={Fragment}>
-            <Dialog as="div" className="relative z-10" onClose={setOpen}>
+        <Transition.Root show={open} as={Fragment}>
+          <Dialog as="div" className="relative z-10" onClose={setOpen}>
+            <Transition.Child
+              as={Fragment}
+              enter="ease-out duration-300"
+              enterFrom="opacity-0"
+              enterTo="opacity-100"
+              leave="ease-in duration-200"
+              leaveFrom="opacity-100"
+              leaveTo="opacity-0"
+            >
+              <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
+            </Transition.Child>
+
+            <div className="fixed inset-0 z-10 overflow-y-auto">
+              <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+                <Transition.Child
+                  as={Fragment}
+                  enter="ease-out duration-300"
+                  enterFrom="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                  enterTo="opacity-100 translate-y-0 sm:scale-100"
+                  leave="ease-in duration-200"
+                  leaveFrom="opacity-100 translate-y-0 sm:scale-100"
+                  leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                >
+                  <Dialog.Panel className="relative transform overflow-hidden rounded-lg bg-white px-4 pt-5 pb-4 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-sm sm:p-6">
+                    <form
+                      action="#"
+                      method="POST"
+                      onSubmit={(e) => newTopic(e)}
+                    >
+                      <div>
+                        <Input
+                          label="Topic"
+                          name="topic"
+                          required
+                          type={"text"}
+                          placeholder="cool.topic"
+                          value={topic}
+                          onChange={(e) => searchTopic(e.target.value)}
+                        />
+                      </div>
+                      <div className="mt-5 sm:mt-6">
+                        <div className="pb-5 text-base">
+                          {filteredTopics.length > 0 && (
+                            <>
+                              <span className="text-xs">Suggestions:</span>
+                              {filteredTopics.map((tt) => (
+                                <div
+                                  key={tt.id}
+                                  className="cursor-pointer text-purple-700"
+                                  onClick={() => selectTopic(tt)}
+                                >
+                                  #{tt.name}
+                                </div>
+                              ))}
+                            </>
+                          )}
+                        </div>
+                        <Button
+                          className="inline-flex w-full"
+                          variant="contained"
+                          size="small"
+                          type="submit"
+                          startIcon={<PencilIcon className="w-5 h-5" />}
+                        >
+                          Create Topic
+                        </Button>
+                      </div>
+                    </form>
+                  </Dialog.Panel>
+                </Transition.Child>
+              </div>
+            </div>
+          </Dialog>
+        </Transition.Root>
+      </div>
+
+      <Transition.Root show={open} as={Fragment}>
+        <Dialog as="div" className="relative z-10" onClose={setOpen}>
+          <Transition.Child
+            as={Fragment}
+            enter="ease-out duration-300"
+            enterFrom="opacity-0"
+            enterTo="opacity-100"
+            leave="ease-in duration-200"
+            leaveFrom="opacity-100"
+            leaveTo="opacity-0"
+          >
+            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
+          </Transition.Child>
+
+          <div className="fixed inset-0 z-10 overflow-y-auto">
+            <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
               <Transition.Child
                 as={Fragment}
                 enter="ease-out duration-300"
-                enterFrom="opacity-0"
-                enterTo="opacity-100"
+                enterFrom="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                enterTo="opacity-100 translate-y-0 sm:scale-100"
                 leave="ease-in duration-200"
-                leaveFrom="opacity-100"
-                leaveTo="opacity-0"
+                leaveFrom="opacity-100 translate-y-0 sm:scale-100"
+                leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
               >
-                <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
-              </Transition.Child>
-
-              <div className="fixed inset-0 z-10 overflow-y-auto">
-                <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
-                  <Transition.Child
-                    as={Fragment}
-                    enter="ease-out duration-300"
-                    enterFrom="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                    enterTo="opacity-100 translate-y-0 sm:scale-100"
-                    leave="ease-in duration-200"
-                    leaveFrom="opacity-100 translate-y-0 sm:scale-100"
-                    leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                  >
-                    <Dialog.Panel className="relative transform overflow-hidden rounded-lg bg-white px-4 pt-5 pb-4 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-sm sm:p-6">
-                      <form
-                        action="#"
-                        method="POST"
-                        onSubmit={(e) => newTopic(e)}
+                <Dialog.Panel className="relative transform overflow-hidden rounded-lg bg-white px-4 pt-5 pb-4 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-sm sm:p-6">
+                  <form action="#" method="POST" onSubmit={(e) => newTopic(e)}>
+                    <div>
+                      <Input
+                        label="Topic"
+                        name="topic"
+                        required
+                        type={"text"}
+                        placeholder="cool.topic"
+                        value={topic}
+                        onChange={(e) => setTopic(e.target.value)}
+                      />
+                    </div>
+                    <div className="mt-5 sm:mt-6">
+                      <Button
+                        className="inline-flex w-full"
+                        variant="contained"
+                        size="small"
+                        type="submit"
+                        startIcon={<PencilIcon className="w-5 h-5" />}
                       >
-                        <div>
-                          <Input
-                            label="Topic"
-                            name="topic"
-                            required
-                            type={"text"}
-                            placeholder="cool.topic"
-                            value={topic}
-                            onChange={(e) => searchTopic(e.target.value)}
-                          />
-                        </div>
-                        <div className="mt-5 sm:mt-6">
-                          <div className="pb-5 text-base">
-                            {filteredTopics.length > 0 && (
-                              <>
-                                <span className="text-xs">Suggestions:</span>
-                                {filteredTopics.map((tt) => (
-                                  <div
-                                    key={tt.id}
-                                    className="cursor-pointer text-purple-700"
-                                    onClick={() => selectTopic(tt)}
-                                  >
-                                    #{tt.name}
-                                  </div>
-                                ))}
-                              </>
-                            )}
-                          </div>
-                          <Button
-                            className="inline-flex w-full"
-                            variant="contained"
-                            size="small"
-                            type="submit"
-                            startIcon={<PencilIcon className="w-5 h-5" />}
-                          >
-                            Create Topic
-                          </Button>
-                        </div>
-                      </form>
-                    </Dialog.Panel>
-                  </Transition.Child>
-                </div>
-              </div>
-            </Dialog>
-          </Transition.Root>
-        </div>
-      )}
+                        Create Topic
+                      </Button>
+                    </div>
+                  </form>
+                </Dialog.Panel>
+              </Transition.Child>
+            </div>
+          </div>
+        </Dialog>
+      </Transition.Root>
     </>
   );
 }
